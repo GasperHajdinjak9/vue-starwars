@@ -8,7 +8,15 @@
 
     export default {
         name: 'Card',
+
+        mounted() {
+            fetch('https://swapi.dev/api/')
+            .then((res) => res.json())
+            .then(data => console.log(data))
+        }
     }
+
+
     
 </script>
 
