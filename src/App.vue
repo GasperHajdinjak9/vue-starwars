@@ -1,23 +1,20 @@
 <script lang="ts">
-    import Card from './components/Card.vue'
+import Card from './components/Card.vue'
+import Navbar from './components/Navbar.vue'
 
-    export default {
-        name: 'App',
-        components: {
-          Card
-        }
+export default {
+    name: 'App',
+    components: {
+        Card,
+        Navbar
     }
-    
+}
+
 </script>
 
 <template>
-  <header>
-    <h1>Hello</h1>
-    <Card/>
-  </header>
-
+    <Navbar />
+    <Card />
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>
