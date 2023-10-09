@@ -1,5 +1,6 @@
 <template>
-    <div class="card-container flex flex-wrap justify-center">
+    <Loading v-if="isLoading" />
+    <div v-else class="card-container flex flex-wrap justify-center">
         <div v-for="character in characters" :key="character.name"
             class="card-container__card m-4 w-full md:w-1/2 lg:w-1/3 xl:w-1/4">
             <div class="c-card__image-container">
@@ -11,42 +12,48 @@
                         Name: {{ character.name }}
                     </div>
                     <div v-else>
-                        Name: <input v-model="character.name" v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }"/>
+                        Name: <input v-model="character.name"
+                            v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }" />
                     </div>
                     <!-- mass -->
                     <div v-if="!character.isEditing">
                         Height: {{ character.height }}
                     </div>
                     <div v-else>
-                        Height:<input v-model="character.height" v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }"/>
+                        Height:<input v-model="character.height"
+                            v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }" />
                     </div>
                     <!-- hair -->
                     <div v-if="!character.isEditing">
                         Hair Color: {{ character.hair_color }}
                     </div>
                     <div v-else>
-                        Hair Color:<input v-model="character.hair_color" v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }"/>
+                        Hair Color:<input v-model="character.hair_color"
+                            v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }" />
                     </div>
                     <!-- skin -->
                     <div v-if="!character.isEditing">
                         Skin Color: {{ character.skin_color }}
                     </div>
                     <div v-else>
-                        Skin Color:<input v-model="character.skin_color" v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }"/>
+                        Skin Color:<input v-model="character.skin_color"
+                            v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }" />
                     </div>
                     <!-- birth -->
                     <div v-if="!character.isEditing">
                         Birth year: {{ character.birth_year }}
                     </div>
                     <div v-else>
-                        Birth year:<input v-model="character.birth_year" v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }"/>
+                        Birth year:<input v-model="character.birth_year"
+                            v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }" />
                     </div>
                     <!-- spol -->
                     <div v-if="!character.isEditing">
                         Gender: {{ character.gender }}
                     </div>
                     <div v-else>
-                        Gender:<input v-model="character.gender" v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }"/>
+                        Gender:<input v-model="character.gender"
+                            v-bind:class="{ 'bg-transparent border-b-2 border-white text-white placeholder-white::opacity-50 p-1 w-full': character.isEditing }" />
                     </div>
                     <button @click="character.isEditing ? saveEdits(character) : startEditing(character)">
                         {{ character.isEditing ? 'Save' : 'Edit' }}
@@ -64,6 +71,7 @@ import axios from 'axios'
 import VueAxios from 'vue-axios'
 
 import { defineComponent, ref, onMounted } from 'vue';
+import Loading from '../components/Loading.vue'
 
 import obiWanKenobiImg from '../assets/obi-wan.png';
 import darthVaderImg from '../assets/darth-vader.png';
@@ -91,9 +99,14 @@ interface Images {
 
 export default defineComponent({
     name: 'Card',
+    components: {
+        Loading
+    },
 
     setup() {
         const characters = ref<EditableCharacter[]>([]);
+        const isLoading = ref(true);
+
 
 
         const startEditing = (character: EditableCharacter) => {
@@ -123,13 +136,16 @@ export default defineComponent({
 
         const fetchCharacters = async () => {
             try {
+                isLoading.value = true;
                 const response = await axios.get('https://swapi.dev/api/people/');
                 const selectedCharacters = ['R2-D2', 'Darth Vader', 'Obi-Wan Kenobi',];
                 characters.value = response.data.results
                     .filter((char: EditableCharacter) => selectedCharacters.includes(char.name))
                     .map((char: EditableCharacter) => ({ ...char, isEditing: false, originalName: char.name }));
+                isLoading.value = false;
 
             } catch (err) {
+                isLoading.value = false;
                 console.log(err);
             }
         }
@@ -142,6 +158,7 @@ export default defineComponent({
             toggleEdit,
             startEditing,
             saveEdits,
+            isLoading
         }
     },
 });
