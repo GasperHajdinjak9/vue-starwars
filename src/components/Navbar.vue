@@ -11,7 +11,6 @@
     </nav>
 </template>
 
-
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
 
@@ -72,7 +71,6 @@ export default defineComponent({
         text-decoration: underline;
     }
 }
-
 .navbar__logo {
     font-size: 24px;
     font-weight: bold;
@@ -103,11 +101,9 @@ export default defineComponent({
             }
         }
     }
-
     .navbar__links-container.active {
         display: flex;
     }
-
     .navbar__hamburger {
         display: block;
     }

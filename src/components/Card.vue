@@ -72,12 +72,13 @@
     </div>
 </template>
 
-
 <script lang="ts">
 ///////* IMPORTS */////////
 import axios from 'axios'
 
 import { defineComponent, ref, onMounted } from 'vue';
+import { openDB } from 'idb';
+
 import Loading from '../components/Loading.vue'
 
 import obiWanKenobiImg from '../assets/obi-wan.png';
@@ -100,6 +101,7 @@ interface Character {
 
 interface EditableCharacter extends Character {
     isEditing?: boolean;
+    [key: string]: any;
 }
 
 interface Images {
@@ -125,58 +127,69 @@ export default defineComponent({
         const isLoading = ref(true);
 
         ///////////* INDEX DB *//////////////
-        let db: IDBDatabase | null = null;
+        let db: any;
         let objectStore = null;
-        let dbOpenReq = indexedDB.open('characters', 8); //ustvari nov databse z imenom 'characters' + verzija 
 
-        dbOpenReq.addEventListener('error', (err) => {
-            console.warn(err);
-        })
+        async function setupDB() {
+            try {
+                db = await openDB('character', 10, { //ustvari nov databse z imenom 'characters' + verzija 
+                    upgrade(db, oldVersion, newVersion, transaction) {
+                        console.log('upgraded from', oldVersion, 'to', newVersion)
 
-        dbOpenReq.addEventListener('success', (ev: Event) => {
-            db = (ev.target as IDBOpenDBRequest).result;
-        })
+                        if (!db.objectStoreNames.contains('characters')) {
 
-        dbOpenReq.addEventListener('upgradeneeded', (ev: IDBVersionChangeEvent) => {
-            db = (ev.target as IDBOpenDBRequest).result;
-            let oldVersion = ev.oldVersion;
-            let newVersion = ev.newVersion || db.version;
-            console.log('upgraded from', oldVersion, 'to', newVersion)
-
-            //preverimo, če object že obstaja, če ne, ustvarimo db object in določimo/dodamo key
-
-            if (!db.objectStoreNames.contains('characters')) {
-
-                objectStore = db.createObjectStore('characters', {
-                    keyPath: 'id',
-                    autoIncrement: true
+                            objectStore = db.createObjectStore('characters', {
+                                keyPath: 'id',
+                                autoIncrement: true
+                            })
+                        }
+                    }
                 })
+            } catch (error) {
+                console.error(error)
             }
-        })
-
-        const addToIndexDB = (character: EditableCharacter) => {
-            // zbrišemo "isEditing" zaradi težave pri kloniranju objecta
-            const clonedCharacter = { ...character };
-            delete clonedCharacter.isEditing;
-
-            // določimo specifičen store v bazi
-            let tx = db!.transaction('characters', 'readwrite');
-            let store = tx.objectStore('characters');
-
-            //dodamo character v object store
-            store.put(clonedCharacter);
-
-            tx.oncomplete = () => {
-                console.log('Stored character:', clonedCharacter);
-            };
-
-            tx.onerror = (event: Event) => {
-                console.error('Error storing character:', event);
-            };
         }
 
-        ///////////* /INDEX DB *///////////
+        function prepareForDB(character: EditableCharacter): any {
+            const clonedCharacter = JSON.parse(JSON.stringify(character, (key, value) => {
+                if (typeof value === 'symbol' || typeof value === 'function' || value === undefined) {
+                    return; // Return undefined to exclude this from the serialized JSON
+                }
+                return value;
+            }));
+            return clonedCharacter;
+        }
 
+        async function addToDB(character: EditableCharacter) {
+            try {
+                const tx = db.transaction('characters', 'readwrite');
+                const store = tx.objectStore('characters');
+                const characterForDB = prepareForDB(character);
+                await store.put(characterForDB);
+                console.log(characterForDB);
+
+                await tx.done;
+                console.log("Transaction completed successfully.");
+            } catch (error) {
+                console.error('Error storing character:', error);
+            }
+        }
+
+        async function fetchFromDB(): Promise<EditableCharacter[]> {
+            try {
+                const tx = db.transaction('characters', 'readonly');
+                const store = tx.objectStore('characters');
+                const allCharacters = await store.getAll();
+                return allCharacters;
+            } catch (error) {
+                console.error('Error fetching characters from DB:', error);
+                return [];
+            }
+        }
+
+        setupDB().catch(err => console.warn(err));
+
+        ///////////* /INDEX DB *///////////
 
         //////////* EDITING FUNCTIONALITIES *//////////
 
@@ -192,14 +205,15 @@ export default defineComponent({
 
         const saveEdits = (character: EditableCharacter) => {
             character.isEditing = false;
+            addToDB(character);
 
             // odkomentiraj glede na kater browser storage želiš uporabit
             // localStorage.setItem("data", JSON.stringify(characters.value)) // store to local storage
-            // addToIndexDB(character) // store to indexDB
         };
 
-         //////////* /EDITING FUNCTIONALITIES *//////////
+        //////////* /EDITING FUNCTIONALITIES *//////////
 
+        //////////* DATA FETCHING *///////////
         let uniqueId = 1;
         const fetchCharacters = async () => {
             try {
@@ -216,17 +230,32 @@ export default defineComponent({
                 console.log(err);
             }
         }
+        //////////* /DATA FETCHING *///////////
 
-        //////////* LOCAL STORAGE *//////////
-        const storedData = JSON.parse(localStorage.getItem("data") || '[]');
+        ///////////* FETCH INDEXDB *//////////
 
-        if (storedData.length > 0) {
-            characters.value = storedData;
-            isLoading.value = false;
-        } else {
-            onMounted(fetchCharacters);
-        }
-        //////////* /LOCAL STORAGE *//////////
+        onMounted(async () => {
+            const dbData = await fetchFromDB();
+            if (dbData && dbData.length > 0) {
+                characters.value = dbData;
+                isLoading.value = false;
+            } else {
+                fetchCharacters();
+            }
+        });
+
+        //////////* /FETCH INDEXDB *//////////
+
+        //////////* FETCH LOCAL STORAGE *//////////
+        // const storedData = JSON.parse(localStorage.getItem("data") || '[]');
+
+        // if (storedData.length > 0) {
+        //     characters.value = storedData;
+        //     isLoading.value = false;
+        // } else {
+        //     onMounted(fetchCharacters);
+        // }
+        //////////* /FETCH LOCAL STORAGE *//////////
 
         return {
             characters,
@@ -262,7 +291,6 @@ export default defineComponent({
         padding: 10px;
     }
 }
-
 .card-container {
     display: flex;
     justify-content: center;
