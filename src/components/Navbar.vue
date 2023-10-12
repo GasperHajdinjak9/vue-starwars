@@ -20,7 +20,7 @@ export default defineComponent({
 
         const toggleMenu = () => {
             menuOpen.value = !menuOpen.value;
-        };
+        }; 
 
         return { menuOpen, toggleMenu }
     }

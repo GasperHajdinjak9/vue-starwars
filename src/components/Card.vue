@@ -234,8 +234,13 @@ export default defineComponent({
 
         ///////////* FETCH INDEXDB *//////////
 
+        async function initAndFetchFromDB(): Promise<EditableCharacter[]> {
+            await setupDB(); // Make sure to setup the DB first
+            return fetchFromDB(); // Only fetch once the DB is initialized
+        }
+
         onMounted(async () => {
-            const dbData = await fetchFromDB();
+            const dbData = await initAndFetchFromDB();
             if (dbData && dbData.length > 0) {
                 characters.value = dbData;
                 isLoading.value = false;
@@ -243,6 +248,7 @@ export default defineComponent({
                 fetchCharacters();
             }
         });
+
 
         //////////* /FETCH INDEXDB *//////////
 
@@ -291,6 +297,7 @@ export default defineComponent({
         padding: 10px;
     }
 }
+
 .card-container {
     display: flex;
     justify-content: center;
