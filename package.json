@@ -10,12 +10,15 @@
     "type-check": "vue-tsc --noEmit -p tsconfig.app.json --composite false"
   },
   "dependencies": {
+    "@tanstack/query-core": "^5.8.7",
+    "@tanstack/vue-query": "^5.8.3",
     "axios": "^1.5.1",
     "idb": "^7.1.1",
     "pinia": "^2.1.6",
     "vue": "^3.3.4",
     "vue-axios": "^3.5.2",
-    "vue-router": "^4.2.4"
+    "vue-router": "^4.2.4",
+    "vue3-toastify": "^0.1.14"
   },
   "devDependencies": {
     "@tsconfig/node18": "^18.2.2",

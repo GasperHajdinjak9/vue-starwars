@@ -4,7 +4,7 @@
         <div class="navbar__links-container" :class="{ 'active': menuOpen }">
             <a href="" class="navbar__link">Upcoming</a>
             <a href="" class="navbar__link">Legacy</a>
-            <img src="../assets/star-wars-logo.png" alt="" class="navbar__logo w-40 h-15">
+            <img src="../../assets/star-wars-logo.png" alt="" class="navbar__logo w-40 h-15">
             <a href="" class="navbar__link">Merch</a>
             <a href="" class="navbar__link">About</a>
         </div>

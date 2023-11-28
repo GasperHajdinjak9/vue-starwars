@@ -1,19 +1,20 @@
 <script lang="ts">
-import Card from './components/Card.vue'
-import Navbar from './components/Navbar.vue'
+import { defineComponent } from 'vue';
+import HomeView from './views/HomeView.vue';
+import Navbar from './components/common/Navbar.vue';
 
-export default {
-    name: 'App',
-    components: {
-        Card,
-        Navbar
-    }
-}
+export default defineComponent({
+  name: 'App',
+  components: {
+    HomeView,
+    Navbar
+  }
+});
 </script>
 
 <template>
-    <Navbar />
-    <Card />
+    <div>
+        <Navbar />
+        <HomeView />
+    </div>
 </template>
-
-<style scoped></style>
