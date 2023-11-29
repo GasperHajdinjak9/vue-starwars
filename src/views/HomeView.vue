@@ -1,6 +1,8 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
 
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
+
 import Card from '../components/common/Card.vue';
 import Loading from '../components/Loading.vue'
 import Button from '../components/common/Button.vue';
@@ -25,7 +27,12 @@ export default defineComponent({
   },
   setup() {
     const characters = ref([]);
-    const isLoading = ref(true);
+    const queryClient = useQueryClient();
+    const { isLoading, data } = useQuery({
+      queryKey: ['fetchData'],
+      queryFn: ApiService.fetchCharacters,
+      enabled: false
+    });
 
     const saveCharacter = async (character: EditableCharacter) => {
       await addToDB(character);
@@ -36,17 +43,18 @@ export default defineComponent({
 
     onMounted(async () => {
       try {
-        isLoading.value = true;
         await setupDB();
         const dbCharacters = await fetchFromDB();
 
         if (dbCharacters.length > 0) {
-          // Use characters from DB if available
           characters.value = dbCharacters;
         } else {
-          // Fetch characters from API if DB is empty
-          const response = await ApiService.fetchCharacters();
-          const apiCharacters = response.data.results
+          await queryClient.prefetchQuery({
+            queryKey: ['fetchData'],
+            queryFn: ApiService.fetchCharacters
+          });
+
+          const apiCharacters = data.value?.data.results
             .filter(character => SpecificCharacters.includes(character.name))
             .map((character, index) => ({
               ...character,
@@ -57,15 +65,11 @@ export default defineComponent({
 
           characters.value = apiCharacters;
 
-          // Save all characters to DB
           apiCharacters.forEach(async (character) => {
             await addToDB(character);
           });
         }
-        isLoading.value = false;
       } catch (error) {
-        console.error('Error fetching characters:', error);
-        isLoading.value = false;
         toast.error("Nekaj je šlo narobe", error);
       }
     });
@@ -93,10 +97,10 @@ export default defineComponent({
         <template v-slot:content class="flex justify-center align-center">
           <div class="flex flex-col items-center pb-10">
             <div v-for="field in editableFields" :key="field" class="my-2 flex flex-col justify-center w-full">
-              <strong>{{ field }}:</strong> 
+              <strong>{{ field }}:</strong>
               <span v-if="!character.isEditing">{{ character[field] }}</span>
               <input v-else type="text" v-model="character[field]" class="border rounded px-2 bg-gray-100 text-black" />
-            </div> 
+            </div>
           </div>
         </template>
 

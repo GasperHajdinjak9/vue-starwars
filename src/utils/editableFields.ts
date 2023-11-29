@@ -7,3 +7,4 @@ export const editableFields = ['name', 'height', 'hair_color', 'skin_color', 'bi
 //     skin_color: "Skin Color", 
 //     birth_year: "Birth Year"
 // };
+
