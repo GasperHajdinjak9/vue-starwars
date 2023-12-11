@@ -16,7 +16,10 @@ import { SpecificCharacters } from '../enums/CharacterNames';
 import { editableFields } from '../utils/editableFields';
 import { toggleEditing } from '../services/EditServices';
 
+import { DatabaseType } from '../enums/databseTypes';
 import { addToDB, fetchFromDB, setupDB } from '../services/DBService';
+import * as StorageServiceManager from '../services/StorageServiceManager';
+
 
 export default defineComponent({
   name: 'HomeView',
@@ -27,6 +30,8 @@ export default defineComponent({
   },
   setup() {
     const characters = ref([]);
+    const databaseType = ref(DatabaseType.INDEXED_DB)
+
     const queryClient = useQueryClient();
     const { isLoading, data } = useQuery({
       queryKey: ['fetchData'],
@@ -40,6 +45,24 @@ export default defineComponent({
       delete character.originalState;
       toast.success("Uspešno shranjeno");
     };
+
+    const fetchAndStoreCharacters = async () => {
+  await StorageServiceManager.setupStorage(databaseType.value);
+  const storedCharacters = await StorageServiceManager.fetchCharacters(databaseType.value);
+
+  if (storedCharacters.length > 0) {
+    characters.value = storedCharacters;
+  } else {
+    const response = await ApiService.fetchCharacters();
+    const apiCharacters = response.data.results; 
+
+    characters.value = apiCharacters;
+    for (const character of apiCharacters) {
+      await StorageServiceManager.saveCharacter(character, databaseType.value);
+    }
+  }
+};
+
 
     onMounted(async () => {
       try {
@@ -88,13 +111,13 @@ export default defineComponent({
 <template>
   <main>
     <Loading v-if="isLoading" />
-    <div v-else class="flex flex-row flex-wrap justify-center">
+    <div v-else class="flex flex-col gap-10 lg:flex-row justify-center items-center w-full">
       <Card v-for="(character, id) in characters" :key="character.id" :character="character">
         <template v-slot:image>
           <img :src="character.imageURL" alt="Character Image" />
         </template>
 
-        <template v-slot:content class="flex justify-center align-center">
+        <template v-slot:content class="flex flex-col sm:flex-row">
           <div class="flex flex-col items-center pb-10">
             <div v-for="field in editableFields" :key="field" class="my-2 flex flex-col justify-center w-full">
               <strong>{{ field }}:</strong>

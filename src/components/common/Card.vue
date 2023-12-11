@@ -1,6 +1,6 @@
 <template>
   <div class="card m-4">
-    <div class="card__image-container">
+    <div class="card__image-container sm:width-full rounded">
       <slot name="image"></slot>
       <div class="card__text">
         <slot name="header"></slot>
