@@ -5,7 +5,7 @@ export const toggleEditing = (character: EditableCharacter) => {
   if (character.isEditing) {
     if (character.originalState) {
       Object.assign(character, character.originalState);
-      delete character.originalState; // Clear
+      delete character.originalState; 
     }
     character.isEditing = false;
   } else {

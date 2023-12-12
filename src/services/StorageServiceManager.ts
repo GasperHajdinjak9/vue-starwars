@@ -1,28 +1,44 @@
-// StorageServiceManager.ts
+import { DatabaseType } from "../enums/databseTypes";
+import { addToDB, fetchFromDB, setupDB } from "./DBService";
+import {
+  addToLocalStorage,
+  fetchFromLocalStorage,
+} from "./LocalStorageService";
+import type { EditableCharacter } from "../interfaces/Character";
 
-import { DatabaseType } from '../enums/databseTypes';
-import * as DBService from './DBService';
-import * as LocalStorageService from './LocalStorageService';
-import type { EditableCharacter } from '../interfaces/Character';
-
-export const setupStorage = async (databaseType: DatabaseType): Promise<void> => {
+export const setupStorage = async (
+  databaseType: DatabaseType
+): Promise<void> => {
   if (databaseType === DatabaseType.INDEXED_DB) {
-    await DBService.setupDB();
+    await setupDB();
   }
 };
 
-export const saveCharacter = async (character: EditableCharacter, databaseType: DatabaseType): Promise<void> => {
+export const saveCharacter = async (
+  character: EditableCharacter,
+  databaseType: DatabaseType
+): Promise<void> => {
   if (databaseType === DatabaseType.INDEXED_DB) {
-    await DBService.addToDB(character);
+    await addToDB(character);
   } else {
-    LocalStorageService.addToLocalStorage('characters', character);
+    const characters =
+      fetchFromLocalStorage<EditableCharacter[]>("characters") || [];
+    const index = characters.findIndex((c) => c.id === character.id);
+    if (index !== -1) {
+      characters[index] = character;
+    } else {
+      characters.push(character);
+    }
+    addToLocalStorage("characters", characters);
   }
 };
 
-export const fetchCharacters = async (databaseType: DatabaseType): Promise<EditableCharacter[]> => {
+export const fetchCharacters = async (
+  databaseType: DatabaseType
+): Promise<EditableCharacter[]> => {
   if (databaseType === DatabaseType.INDEXED_DB) {
-    return DBService.fetchFromDB();
+    return await fetchFromDB();
   } else {
-    return LocalStorageService.fetchFromLocalStorage('characters') || [];
+    return fetchFromLocalStorage<EditableCharacter[]>("characters") || [];
   }
 };

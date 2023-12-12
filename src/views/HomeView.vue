@@ -17,9 +17,7 @@ import { editableFields } from '../utils/editableFields';
 import { toggleEditing } from '../services/EditServices';
 
 import { DatabaseType } from '../enums/databseTypes';
-import { addToDB, fetchFromDB, setupDB } from '../services/DBService';
 import * as StorageServiceManager from '../services/StorageServiceManager';
-
 
 export default defineComponent({
   name: 'HomeView',
@@ -30,8 +28,10 @@ export default defineComponent({
   },
   setup() {
     const characters = ref([]);
+    //select database
     const databaseType = ref(DatabaseType.INDEXED_DB)
 
+    // query client, data is not fetched instantly
     const queryClient = useQueryClient();
     const { isLoading, data } = useQuery({
       queryKey: ['fetchData'],
@@ -39,38 +39,37 @@ export default defineComponent({
       enabled: false
     });
 
-    const saveCharacter = async (character: EditableCharacter) => {
-      await addToDB(character);
-      character.isEditing = false
-      delete character.originalState;
-      toast.success("Uspešno shranjeno");
-    };
-
-    const fetchAndStoreCharacters = async () => {
-  await StorageServiceManager.setupStorage(databaseType.value);
-  const storedCharacters = await StorageServiceManager.fetchCharacters(databaseType.value);
-
-  if (storedCharacters.length > 0) {
-    characters.value = storedCharacters;
-  } else {
-    const response = await ApiService.fetchCharacters();
-    const apiCharacters = response.data.results; 
-
-    characters.value = apiCharacters;
-    for (const character of apiCharacters) {
-      await StorageServiceManager.saveCharacter(character, databaseType.value);
+    //replacingg underscores in filed names
+    const formatFieldName = (fieldName) => {
+      return fieldName
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
     }
-  }
-};
 
+    const saveCharacter = async (character: EditableCharacter) => {
+      await StorageServiceManager.saveCharacter(character, databaseType.value);
+      // on every save the editing state is restored and original state is removed
+      character.isEditing = false;
+      delete character.originalState;
+      toast.success("Successfully saved");
+    };
 
     onMounted(async () => {
       try {
-        await setupDB();
-        const dbCharacters = await fetchFromDB();
+        await StorageServiceManager.setupStorage(databaseType.value);
 
-        if (dbCharacters.length > 0) {
-          characters.value = dbCharacters;
+        let charactersData = await StorageServiceManager.fetchCharacters(databaseType.value);
+
+        charactersData = charactersData.map(character => ({
+          ...character,
+          isEditing: false,
+          originalState: undefined
+        }));
+
+        //if cahracters are in selected storage use them, if not fetch from API
+        if (charactersData.length > 0) {
+          characters.value = charactersData;
         } else {
           await queryClient.prefetchQuery({
             queryKey: ['fetchData'],
@@ -83,17 +82,18 @@ export default defineComponent({
               ...character,
               id: index,
               isEditing: false,
-              imageURL: characterImageMap[character.name]
+              imageURL: characterImageMap[character.name],
+              originalState: undefined
             }));
 
           characters.value = apiCharacters;
 
-          apiCharacters.forEach(async (character) => {
-            await addToDB(character);
-          });
+          for (const character of apiCharacters) {
+            await StorageServiceManager.saveCharacter(character, databaseType.value);
+          }
         }
       } catch (error) {
-        toast.error("Nekaj je šlo narobe", error);
+        toast.error("Something went wrong", error);
       }
     });
 
@@ -103,6 +103,7 @@ export default defineComponent({
       editableFields,
       saveCharacter,
       isLoading,
+      formatFieldName
     };
   }
 });
@@ -120,7 +121,7 @@ export default defineComponent({
         <template v-slot:content class="flex flex-col sm:flex-row">
           <div class="flex flex-col items-center pb-10">
             <div v-for="field in editableFields" :key="field" class="my-2 flex flex-col justify-center w-full">
-              <strong>{{ field }}:</strong>
+              <strong>{{ formatFieldName(field) }}:</strong>
               <span v-if="!character.isEditing">{{ character[field] }}</span>
               <input v-else type="text" v-model="character[field]" class="border rounded px-2 bg-gray-100 text-black" />
             </div>

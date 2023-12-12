@@ -12,9 +12,9 @@ export interface Character {
 
 export interface EditableCharacter extends Character {
     isEditing?: boolean;
-    [key: string]: string;
+    [key: string]: string | number | boolean | undefined;
 }
 
 export interface Images {
-    [key: string]: string;
+    key: string;
 }

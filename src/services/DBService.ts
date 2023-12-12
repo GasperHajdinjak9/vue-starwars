@@ -1,7 +1,8 @@
-import { openDB } from "idb";
+import { openDB } from 'idb';
+import type { IDBPDatabase } from 'idb';
 import type { EditableCharacter } from "../interfaces/Character";
 
-let db: IDBDatabase<unknown>;
+let db: IDBPDatabase;
 
 async function setupDB() {
   try {
